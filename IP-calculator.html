@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>IP Calculator</title>
+
+<style>
+
+body{
+margin:0;
+font-family:Segoe UI, Arial, sans-serif;
+background:linear-gradient(135deg,#4b79a1,rgb(193, 220, 243));
+height:100vh;
+display:flex;
+align-items:center;
+justify-content:center;
+}
+
+.container{
+display:flex;
+gap:40px;
+}
+
+.card{
+background:white;
+padding:35px;
+border-radius:15px;
+box-shadow:0 10px 30px rgba(0,0,0,0.2);
+}
+
+.card:first-child{
+width:400px;
+}
+
+.card:last-child{
+width:450px;
+}
+
+h2{
+margin-top:0;
+margin-bottom:25px;
+color:#333;
+}
+
+label{
+display:block;
+font-size:18px;
+margin-top:10px;
+color:#444;
+}
+
+input{
+width:100%;
+height:25px;
+margin-top:5px;
+border-radius:6px;
+border:1px solid #ccc;
+padding-left:10px;
+font-size:16px;
+}
+
+input:focus{
+outline:none;
+border:1px solid #4b79a1;
+box-shadow:0 0 5px rgba(75,121,161,0.5);
+}
+
+button{
+margin-top:25px;
+width:100%;
+height:45px;
+border:none;
+border-radius:8px;
+background:#4b79a1;
+color:white;
+font-size:18px;
+cursor:pointer;
+transition:0.3s;
+}
+
+button:hover{
+background:#355d7a;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="card">
+
+<h2>Input Data</h2>
+
+<label>IP Address</label>
+<input id="ip" placeholder="194.110.245.185/26">
+
+<button onclick="calculate()">Calculate</button>
+
+</div>
+
+<div class="card">
+
+<h2>Results (With Mask)</h2>
+
+<label>Network Number</label>
+<input id="networkMask">
+
+<label>Host Number</label>
+<input id="hostMask">
+
+<label>Address Range</label>
+<input id="rangeMask">
+
+<label>IP Class</label>
+<input id="classMask">
+
+<hr style="margin:25px 0;">
+
+<h2>Results (Without Mask)</h2>
+
+<label>Network Number</label>
+<input id="networkDefault">
+
+<label>Host Number</label>
+<input id="hostDefault">
+
+<label>Address Range</label>
+<input id="rangeDefault">
+
+<label>IP Class</label>
+<input id="classDefault">
+
+</div>
+
+</div>
+<script>
+
+function calculate(){
+
+let input=document.getElementById("ip").value.trim();
+
+if(!input.includes("/")){
+alert("Enter IP with prefix. Example: 194.110.245.185/26");
+return;
+}
+
+let parts=input.split("/");
+
+let ip=parts[0].split(".").map(Number);
+let prefix=parseInt(parts[1]);
+
+let mask=[];
+
+let remaining=prefix;
+
+for(let i=0;i<4;i++){
+
+let bits=Math.max(Math.min(remaining,8),0);
+
+if(bits===0) mask[i]=0;
+else mask[i]=256-Math.pow(2,8-bits);
+
+remaining-=bits;
+
+}
+
+let network=[];
+let host=[];
+let broadcast=[];
+
+for(let i=0;i<4;i++){
+
+network[i]=ip[i] & mask[i];
+
+host[i]=ip[i] & (~mask[i] & 255);
+
+broadcast[i]=network[i] | (~mask[i] & 255);
+
+}
+
+let first=[...network];
+let last=[...broadcast];
+
+first[3]+=1;
+last[3]-=1;
+
+let rangeMask=first.join(".")+" - "+last.join(".");
+
+let firstOctet=ip[0];
+let ipClass="";
+
+if(firstOctet<=126) ipClass="A";
+else if(firstOctet<=191) ipClass="B";
+else if(firstOctet<=223) ipClass="C";
+else if(firstOctet<=239) ipClass="D";
+else ipClass="E";
+
+let defaultMask=[0,0,0,0];
+
+if(ipClass=="A") defaultMask=[255,0,0,0];
+if(ipClass=="B") defaultMask=[255,255,0,0];
+if(ipClass=="C") defaultMask=[255,255,255,0];
+
+let defaultNetwork=[];
+let defaultHost=[];
+let defaultBroadcast=[];
+
+for(let i=0;i<4;i++){
+
+defaultNetwork[i]=ip[i] & defaultMask[i];
+
+defaultHost[i]=ip[i] & (~defaultMask[i] & 255);
+
+defaultBroadcast[i]=defaultNetwork[i] | (~defaultMask[i] & 255);
+
+}
+
+let defaultFirst=[...defaultNetwork];
+let defaultLast=[...defaultBroadcast];
+
+defaultFirst[3]+=1;
+defaultLast[3]-=1;
+
+let rangeDefault=defaultFirst.join(".")+" - "+defaultLast.join(".");
+
+document.getElementById("networkMask").value=network.join(".");
+document.getElementById("hostMask").value=host.join(".");
+document.getElementById("rangeMask").value=rangeMask;
+document.getElementById("classMask").value=ipClass;
+
+document.getElementById("networkDefault").value=defaultNetwork.join(".");
+document.getElementById("hostDefault").value=defaultHost.join(".");
+document.getElementById("rangeDefault").value=rangeDefault;
+document.getElementById("classDefault").value=ipClass;
+}
+</script>
+
+</body>
+</html>
